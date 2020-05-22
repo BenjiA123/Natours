@@ -1,5 +1,5 @@
-
 class APIFeatures {
+  // This class bring in sorting, filtering, limit and pagination
     constructor(query, queryString) {
       this.query = query;
       this.queryString = queryString;
@@ -7,10 +7,13 @@ class APIFeatures {
   
     filter() {
       const queryObj = { ...this.queryString };
+
+      // Exclude some so that they are not queried from the database but are used for sorting,filtering, limit and pagination
       const excludedFields = ['page', 'sort', 'fields','limit'];
       excludedFields.forEach((el) => delete queryObj[el]);
 
       let queryStr = JSON.stringify(queryObj);
+      // Replacing some operators in the parameter
       queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
       this.query = this.query.find(JSON.parse(queryStr));
   

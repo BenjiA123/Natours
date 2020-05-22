@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+// const validator = require('validator');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -8,6 +9,15 @@ const tourSchema = new mongoose.Schema(
       required: [true, 'Pleas fill in a Name'],
       unique: true,
       trim: true,
+      maxlength: [
+        40,
+        "Tours can't be more than 40 characters",
+      ],
+      minlength: [
+        10,
+        "Tours can't be less than 10 characters",
+      ],
+      // validate:[validator.isAlpha,"Tour name must only contain letters"]
     },
     slug: String,
     duration: {
@@ -21,11 +31,18 @@ const tourSchema = new mongoose.Schema(
     difficulty: {
       type: String,
       required: [true, 'Please add a difficulty'],
+      enum: {
+        values: ['easy', 'medium', 'difficuly'],
+        message:
+          'Difficulty is either easy, medium or difficult',
+      },
     },
     ratingAverage: {
       type: Number,
       required: false,
       default: 4.5,
+      min: [1, 'Rating should be more than 1'],
+      max: [5, 'Rating should be less than 5.0'],
     },
     ratingQuantity: {
       type: Number,
@@ -36,7 +53,17 @@ const tourSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Pleas fill in a Price'],
     },
-    priceDiscount: Number,
+    priceDiscount: {
+      type: Number,
+      validate: {
+        validator: function (val) {
+          // this only point to current doc on new doc creation
+          return val < this.price;
+        },
+        message:
+          'The discout price ({VALUE}) can not be more than the price',
+      },
+    },
     summary: {
       type: String,
       required: [true, 'Please write a summary'],
@@ -80,7 +107,7 @@ tourSchema.pre('save', function (next) {
 
 // QUERY MIDDLEWARE FOR NON SECREAT TOURS
 
-// tourSchema.pre('find', function (next) {
+// Permits middleware to work for all "find" calls such as findOne,findMany
 
 tourSchema.pre(/^find/, function (next) {
   this.find({ secretTour: { $ne: true } });

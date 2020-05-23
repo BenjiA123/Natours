@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 
@@ -12,6 +13,17 @@ const signToken = (id) => {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
+const createSendToken = (user,statusCode,res)=>{
+  const token = signToken(user._id);
+  res.status(statusCode).json({
+    status: 'success',
+    data: {
+      user,
+      token,
+    },
+  });
+}
+
 
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
@@ -22,15 +34,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordChangedAt: req.body.passwordChangedAt,
     role: req.body.role,
   });
-
-  const token = signToken(newUser._id);
-  res.status(200).json({
-    status: 'success',
-    data: {
-      user: newUser,
-      token,
-    },
-  });
+  createSendToken(newUser,201,res)
+ 
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -50,11 +55,8 @@ exports.login = catchAsync(async (req, res, next) => {
   ) {
     return next(new AppError('Incorrect email or password', 401));
   }
-  const token = signToken(user._id);
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createSendToken(user,200,res)
+
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -81,6 +83,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   // Check if the user has changed any of his credentials ie If theoriginal user credentials still exist
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
+    console.log()
     return next(
       new AppError(
         'The user belonging to this token no longer exist'
@@ -142,31 +145,82 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   If you didnt request for this Please ignore this email`;
 
   try {
-    console.log(req.get(
-      'host'
-    ))
+    console.log(req.get('host'));
+
     await sendEmail({
       email: user.email,
       subject: "You're password request token (valid for 10mins)",
       message,
     });
+
     res.status(200).json({
       status: 'Success',
       message: 'Token sent to email',
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
-return next(new AppError('Their was an error sending this email. Try again later',500))
+    return next(
+      new AppError(
+        'Their was an error sending this email. Try again later',
+        500
+      )
+    );
   }
 });
 
-exports.resetPassword = (req, res, next) => {
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  // Get user based on token and compare token to see if it has expired
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
 
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+  // Check if there is a user
+  if (!user) {
+    return next(new AppError('Token is Invalid or has expired', 400));
+  }
+  // Change Password
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
 
+  await user.save();
 
+  // Log user in with JWT
+  createSendToken(user,200,res)
 
+});
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  // Get user from collection
+  const user = await User.findById(req.body.id).select('+password');
+  if (!user) {
+    return next(new AppError('You are not a registered User', 400));
+  }
+  // Check if Posted password is correct
+  if (
+    !(await user.correctPassword(
+      req.body.passwordCurrent,
+      user.password
+    ))
+  ) {
+    return next(new AppError('Your current password is wrong', 401));
+  }
+  // If so update App
+  user.password = req.body.password;
 
-};
+  user.passwordConfirm = req.body.passwordConfirm;
+  // User.findById and Update will not work well in this case
+  // Middlewares and validation will not run
+  await user.save();
+  // Log user in send JWT
+  createSendToken(user,200,res)
+
+});

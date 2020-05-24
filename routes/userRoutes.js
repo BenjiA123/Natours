@@ -27,6 +27,12 @@ userRouter.patch(
   UserController.updateMe
 );
 
+userRouter.delete(
+  '/deleteMe',
+  AuthController.protect,
+  UserController.deleteMe
+);
+
 userRouter
   .route('')
   .get(UserController.getAllUsers)

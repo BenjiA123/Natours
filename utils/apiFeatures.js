@@ -1,5 +1,5 @@
 class APIFeatures {
-  // This class bring in sorting, filtering, limit and pagination
+  // This class brings in sorting, filtering, limit and pagination
   constructor(query, queryString) {
     this.query = query;
     this.queryString = queryString;

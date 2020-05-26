@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const User = require('./userModel')
 // const validator = require('validator');
 
 const tourSchema = new mongoose.Schema(
@@ -88,6 +89,31 @@ const tourSchema = new mongoose.Schema(
       default: Date.now(),
       select: false,
     },
+    startLocation: {
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number],
+      address: String,
+      description: String,
+    },
+    location: [
+      {
+        type: String,
+        default: 'Point',
+        enum: 'Point',
+      },
+      {
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day:Number
+      },
+    ],
+    guides:[{type:mongoose.Schema.ObjectId,
+    ref:'User'}],
     startDates: [Date],
   },
   {
@@ -105,6 +131,11 @@ tourSchema.pre('save', function (next) {
   next();
 });
 
+// tourSchema.pre('save',async function(next){
+//   const guidesPromises = this.guides.map(async id =>User.findById(id))
+//   this.guides = await Promise.all(guidesPromises)
+//   next()
+// })
 // QUERY MIDDLEWARE FOR NON SECREAT TOURS
 
 // Permits middleware to work for all "find" calls such as findOne,findMany
@@ -117,7 +148,9 @@ tourSchema.pre(/^find/, function (next) {
 
 tourSchema.post(/^find/, function (docs, next) {
   console.log(
-    `Query took ${Date.now() - this.start} milliseconds`
+    `Query took ${
+      Date.now() - this.start
+    } milliseconds`
   );
   next();
 });

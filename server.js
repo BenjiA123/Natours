@@ -23,6 +23,7 @@ mongoose
   })
   .then(() => {
     console.log('Connected to database ');
+    // console.log(process.env)
   })
   .catch((err) => {
     console.log(err);

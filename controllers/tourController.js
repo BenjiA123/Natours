@@ -14,82 +14,99 @@ exports.aliasTopTours = async (req, res, next) => {
   next();
 };
 
-exports.getAllTours = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(Tour.find(), req.query)
-    .filter()
-    .sort()
-    .limit()
-    .paginate();
-  const tours = await features.query;
-  res.status(200).json({
-    status: 'success',
-    result: tours.length,
-    data: { tours },
-  });
-});
-exports.getTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findById(req.params.id);
-  if (!tour) {
-    return next(
-      new AppError(`No tour Found this with ID`, 404)
-    );
+exports.getAllTours = catchAsync(
+  async (req, res, next) => {
+    const features = new APIFeatures(
+      Tour.find(),
+      req.query
+    )
+      .filter()
+      .sort()
+      .limit()
+      .paginate();
+    const tours = await features.query;
+    res.status(200).json({
+      status: 'success',
+      result: tours.length,
+      data: { tours },
+    });
   }
-  res.status(201).json({
-    status: 'success',
-    data: {
-      tour: tour,
-    },
-  });
-});
+);
+exports.getTour = catchAsync(
+  async (req, res, next) => {
+    const tour = await (
+      await Tour.findById(req.params.id).populate('reviews')
+    )
+    if (!tour) {
+      return next(
+        new AppError(`No tour Found this with ID`, 404)
+      );
+    }
+    res.status(201).json({
+      status: 'success',
+      data: {
+        tour: tour,
+      },
+    });
+  }
+);
 
 // Tale care of req.body in case of security. Do not send your whole req.body to client
-exports.createTour = catchAsync(async (req, res, next) => {
-  const newTour = await Tour.create(req.body);
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour: newTour,
-    },
-  });
-});
+exports.createTour = catchAsync(
+  async (req, res, next) => {
+    const newTour = await Tour.create(req.body);
+    res.status(200).json({
+      status: 'success',
+      data: {
+        tour: newTour,
+      },
+    });
+  }
+);
 
-exports.updateTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    {
-      new: true,
-      // Permits validators for updateTour
-      runValidators: true,
+exports.updateTour = catchAsync(
+  async (req, res, next) => {
+    const tour = await Tour.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        // Permits validators for updateTour
+        runValidators: true,
+      }
+    );
+    if (!tour) {
+      return next(
+        new AppError(`No tour Found this with ID`, 404)
+      );
     }
-  );
-  if (!tour) {
-    return next(
-      new AppError(`No tour Found this with ID`, 404)
-    );
+    res.status(201).json({
+      status: 'success',
+      data: {
+        tour,
+      },
+    });
   }
-  res.status(201).json({
-    status: 'success',
-    data: {
-      tour,
-    },
-  });
-});
+);
 
-exports.deleteTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findByIdAndDelete(req.params.id);
-
-  if (!tour) {
-    return next(
-      new AppError(`No tour Found this with ID`, 404)
+exports.deleteTour = catchAsync(
+  async (req, res, next) => {
+    const tour = await Tour.findByIdAndDelete(
+      req.params.id
     );
-  }
 
-  res.status(201).json({
-    status: 'success',
-    data: 'Tour Successfully Deleted',
-  });
-});
+    if (!tour) {
+      return next(
+        new AppError(`No tour Found this with ID`, 404)
+      );
+    }
+
+    res.status(201).json({
+      status: 'success',
+      data: 'Tour Successfully Deleted',
+    });
+  }
+);
 
 // Manipulating tours stats
 exports.getToursStats = catchAsync(

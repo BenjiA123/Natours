@@ -1,6 +1,7 @@
 const catchAsync = require('../utils/catchAsync');
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
+const factory = require('./handlerFactory')
 
 
 const filterObj =(obj, ...allowedFileds)=>{
@@ -47,41 +48,17 @@ exports.deleteMe =catchAsync(async (req,res,next)=>{
 
 })
 
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find();
+exports.getAllUsers = factory.getAll(User)
 
-  res.status(200).json({
-    status: 'success',
-    results:users.length,
-    users,
-  });
-});
-
-exports.getUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet implemented',
-  });
-};
+exports.getUser = factory.getOne(User)
 
 exports.createUser = (req, res) => {
   res.status(500).json({
     status: 'error',
-    message: 'This route is not yet implemented',
+    message: 'This route is not yet implemented! Please use /signup instead',
   });
-};
-exports.deleteUser = (req, res) => {
-  // User.deleteMany().then(
-  //   res.status(200).json({
-  //     status: 'success',
-  //     message: 'This message wes deleted',
-  //   })
-  // );
 };
 
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet implemented',
-  });
-};
+// Do not change passwords with this
+exports.updateUser = factory.updateOne(User)
+exports.deleteUser = factory.deleteOne(User)

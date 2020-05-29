@@ -10,14 +10,8 @@ const tourSchema = new mongoose.Schema(
       required: [true, 'Pleas fill in a Name'],
       unique: true,
       trim: true,
-      maxlength: [
-        40,
-        "Tours can't be more than 40 characters",
-      ],
-      minlength: [
-        10,
-        "Tours can't be less than 10 characters",
-      ],
+      maxlength: [40, "Tours can't be more than 40 characters"],
+      minlength: [10, "Tours can't be less than 10 characters"],
       // validate:[validator.isAlpha,"Tour name must only contain letters"]
     },
     slug: String,
@@ -34,8 +28,7 @@ const tourSchema = new mongoose.Schema(
       required: [true, 'Please add a difficulty'],
       enum: {
         values: ['easy', 'medium', 'difficult'],
-        message:
-          'Difficulty is either easy, medium or difficult',
+        message: 'Difficulty is either easy, medium or difficult',
       },
     },
     ratingAverage: {
@@ -44,6 +37,7 @@ const tourSchema = new mongoose.Schema(
       default: 4.5,
       min: [1, 'Rating should be more than 1'],
       max: [5, 'Rating should be less than 5.0'],
+      set: (val) => Math.round(val * 10) / 10,
     },
     ratingQuantity: {
       type: Number,
@@ -51,7 +45,7 @@ const tourSchema = new mongoose.Schema(
       default: 0,
     },
     price: {
-      type: String,
+      type: Number,
       required: [true, 'Pleas fill in a Price'],
     },
     priceDiscount: {
@@ -61,8 +55,7 @@ const tourSchema = new mongoose.Schema(
           // this only point to current doc on new doc creation
           return val < this.price;
         },
-        message:
-          'The discout price ({VALUE}) can not be more than the price',
+        message: 'The discout price ({VALUE}) can not be more than the price',
       },
     },
     summary: {
@@ -113,9 +106,7 @@ const tourSchema = new mongoose.Schema(
         day: Number,
       },
     ],
-    guides: [
-      { type: mongoose.Schema.ObjectId, ref: 'User' },
-    ],
+    guides: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
     startDates: [Date],
   },
   {
@@ -124,20 +115,22 @@ const tourSchema = new mongoose.Schema(
   }
 );
 // tourSchema.index({price:1})
-tourSchema.index({price:1,ratingAverage: -1})
-tourSchema.index({slug:1})
+tourSchema.index({ price: 1, ratingAverage: -1 });
+tourSchema.index({ slug: 1 });
 
+tourSchema.index({ startLocation: '2dsphere' });
+// tourSchema.index({ distance: '2dsphere' });
 
 tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });
 
 // Virtual populate
-tourSchema.virtual('reviews',{
-  ref:'Review',
-  foreignField:'tour',
-  localField:'_id'
-})
+tourSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'tour',
+  localField: '_id',
+});
 
 // Middleware for .save() and .create()
 tourSchema.pre('save', function (next) {
@@ -169,21 +162,18 @@ tourSchema.pre(/^find/, function (next) {
 });
 
 tourSchema.post(/^find/, function (docs, next) {
-  console.log(
-    `Query took ${
-      Date.now() - this.start
-    } milliseconds`
-  );
+  console.log(`Query took ${Date.now() - this.start} milliseconds`);
   next();
 });
 
 // AGGREGATION MIDDLEWARE
-tourSchema.pre('aggregate', function (next) {
-  this.pipeline().unshift({
-    $match: { secretTour: { $ne: true } },
-  });
-  next();
-});
+// geoNear aggregation pipeline needs to be the first
+// tourSchema.pre('aggregate', function (next) {
+//   this.pipeline().unshift({
+//     $match: { secretTour: { $ne: true } },
+//   });
+//   next();
+// });
 
 const Tour = mongoose.model('Tour', tourSchema);
 module.exports = Tour;

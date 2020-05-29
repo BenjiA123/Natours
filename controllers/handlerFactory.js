@@ -93,6 +93,7 @@ exports.getAll = (Model) =>
       .sort()
       .limit()
       .paginate();
+    // const doc = await features.query.explain(); The explain method explains the whole document
     const doc = await features.query;
     res.status(200).json({
       status: 'success',

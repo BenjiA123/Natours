@@ -8,37 +8,40 @@ const AuthController = require('../controllers/authController');
 userRouter.post('/signup', AuthController.signup);
 userRouter.post('/login', AuthController.login);
 
-userRouter.post('/forgotPassword', AuthController.forgotPassword);
+userRouter.post(
+  '/forgotPassword',
+  AuthController.forgotPassword
+);
 userRouter.patch(
   '/resetPassword/:token',
   AuthController.resetPassword
 );
 
-
+// Protect all routes after middleware
+userRouter.use(AuthController.protect);
 userRouter.patch(
   '/updateMyPassword',
-  AuthController.protect,
   AuthController.updatePassword
 );
 
-userRouter.patch(
-  '/updateMe',
-  AuthController.protect,
-  UserController.updateMe
-);
+userRouter.patch('/updateMe', UserController.updateMe);
 
+userRouter.get(
+  '/me',
+  UserController.getMe,
+  UserController.getUser
+);
 userRouter.delete(
   '/deleteMe',
-  AuthController.protect,
   UserController.deleteMe
 );
 
+userRouter.use(AuthController.restrictTo('admin'))
+
 userRouter
-  .route('')
+  .route('/')
   .get(UserController.getAllUsers)
   .post(UserController.createUser);
-// You would later delete this delete route
-// .delete(UserController.deleteUser);
 userRouter
   .route('/:id')
   .get(UserController.getUser)

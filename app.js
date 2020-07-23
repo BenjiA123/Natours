@@ -9,9 +9,10 @@ const hpp = require('hpp');
 const app = express();
 
 const morgan = require('morgan');
+const cors = require('cors');
 const userRouter = require('./routes/userRoutes');
 const tourRouter = require('./routes/tourRoutes');
-const reviewRouter = require('./routes/reviewRoutes')
+const reviewRouter = require('./routes/reviewRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 
@@ -34,6 +35,21 @@ app.use('/api', limiter);
 
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
+
+// Permiting other people to access our entire API add it as a single middleware to individual
+// Routes if you want that
+// This only works for simple requests GET and POST
+app.use(cors());
+// Adding Options
+// app.use(cors({
+//   origin:''
+// }))
+// Non Simple requests
+app.options('*', cors());
+// Adding Options
+// app.options(cors({
+//   origin:''
+// }))
 
 // Data sanitization agaist NoSQL query Injection
 app.use(mongoSanitize());
@@ -66,12 +82,13 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   // console.log(req.headers)
   req.requestTime = new Date().toISOString();
+  // console.log(req.cookies);
   next();
 });
 
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/tours', tourRouter);
-app.use('/api/v1/reviews',reviewRouter)
+app.use('/api/v1/reviews', reviewRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));

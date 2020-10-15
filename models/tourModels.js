@@ -39,7 +39,7 @@ const tourSchema = new mongoose.Schema(
       max: [5, 'Rating should be less than 5.0'],
       set: (val) => Math.round(val * 10) / 10,
     },
-    ratingQuantity: {
+    ratingsQuantity: {
       type: Number,
       required: false,
       default: 0,
@@ -69,14 +69,14 @@ const tourSchema = new mongoose.Schema(
     },
     imageCover: {
       type: String,
-      required: [true, 'Please write a summary'],
+      required: [true, 'A tour must have a cover Image'],
       trim: true,
     },
     secretTour: {
       type: Boolean,
       default: false,
     },
-    image: [String],
+    images: [String],
     createdAt: {
       type: Date,
       default: Date.now(),
@@ -93,13 +93,14 @@ const tourSchema = new mongoose.Schema(
       address: String,
       description: String,
     },
-    location: [
+    locations: [
       {
-        type: String,
-        default: 'Point',
-        enum: ['Point'],
-      },
-      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point'],
+        },
+
         coordinates: [Number],
         address: String,
         description: String,

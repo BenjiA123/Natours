@@ -31,7 +31,7 @@ const reviews = JSON.parse(fs.readFileSync(`${__dirname}/data/reviews.json`, 'ut
 
 const importData = async () => {
   try {
-    await Tour.create(tours);
+    await Tour.create(tours,{ validateBeforeSave: false });
     await User.create(users, { validateBeforeSave: false });
     await Review.create(reviews);
     console.log('DATA LOADED');

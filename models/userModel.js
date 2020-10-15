@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema({
   },
   photo: {
     type: String,
+    default: 'default.jpg',
   },
   role: {
     type: String,
@@ -44,20 +45,18 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: { type: Date, select: true },
   passwordResetToken: String,
   passwordResetExpires: Date,
-  active:{
-    type:Boolean,
-    default:true,
-    select:false
-  }
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
 });
 
-userSchema.pre(/^find/,async function(next){
+userSchema.pre(/^find/, async function (next) {
   // this points to the current query
-  this.find({active:{$ne:false}})
-  next()
-})
-
-
+  this.find({ active: { $ne: false } });
+  next();
+});
 
 userSchema.pre('save', async function (next) {
   // Only runs if password was modified
@@ -67,12 +66,11 @@ userSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
-userSchema.pre("save", function(next){
-  if(!this.isModified('password')|| this.isNew) return next()
-  this.passwordChangedAt = Date.now() -1000
-  next()
-
-})
+userSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) return next();
+  this.passwordChangedAt = Date.now() - 1000;
+  next();
+});
 // For logging in checks if passwords are the same
 userSchema.methods.correctPassword = async function (candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
@@ -93,9 +91,9 @@ userSchema.methods.createPasswordResetToken = function () {
 
   this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-  console.log({resetToken},this.passwordResetToken)
+  console.log({ resetToken }, this.passwordResetToken);
   this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
-  return resetToken
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

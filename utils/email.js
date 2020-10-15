@@ -1,28 +1,64 @@
 const nodemailer = require('nodemailer');
+const pug = require('pug');
+const htmlToText = require('html-to-text')
 
-const sendEmail = async (options) => {
-  // Three steps of nodemailer
-  // Create transporter
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.mailtrap.io',
-    port: 25,
-    auth: {
-      user: '40c302ca9ec2c5',
-      pass: '47e2e62ef6be09',
-    },
-  });
+module.exports = class Email{
+  constructor(user,url){
+    this.to =user.email
+    this.firstname = user.name.split(' ')[0]
+    this.url= url
+    this.from = `"Teck Team" <${process.env.EMAIL_FORM}>`
+  }
 
-  // Define email Options
+  newTransport(){
+    if(process.env.NODE_ENV === 'production'){
+      // SEND GRID
+      // return nodemailer.createTransport({
+      //   service:'SendGrid',
+      //   auth:{
+      //     user: SENDGRID_USERNAME,
+      //     pass: SENDGRID_PASSWORD,
+      //   }
+      // })
+      return 1 //Just a place holder till i fix sendGrid
+    }
 
-  const  mailOptions = {
-    from: '"Natours Team" <teck@example.com>',
-    to: options.email,
-    subject: options.subject,
-    text: options.message, 
-    // html: '<b>Hey there! </b><br> This is our first message sent with Nodemailer'
-};
+    return nodemailer.createTransport({
+      host: 'smtp.mailtrap.io',
+      port: 25,
+      auth: {
+        user: '40c302ca9ec2c5',
+        pass: '47e2e62ef6be09',
+      },
+    });
+  }
 
-  // Send the email
-  await transporter.sendMail(mailOptions);
-};
-module.exports = sendEmail;
+  async send(template,subject){
+    const html = pug.renderFile(`${__dirname}/../views/email/${template}.pug`,
+    {
+      firstName:this.firstname,
+      url:this.url,
+      subject
+    })
+
+    const  mailOptions = {
+      from: this.from,
+      to:this.to,
+      subject,
+      html,
+      text:htmlToText.fromString(html)
+  };
+  
+  this.newTransport().sendMail(mailOptions)
+
+  }
+
+  async sendWelcome(){
+    await this.send('Welcome',"Welcome to the natours Family")
+  }
+
+  async sendPasswordReset(){
+    await this.send('passwordReset','Your Password reset token is valid for 10 minutes')
+  }
+}
+
